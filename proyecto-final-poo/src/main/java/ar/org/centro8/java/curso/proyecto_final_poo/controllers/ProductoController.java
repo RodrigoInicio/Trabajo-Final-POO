@@ -1,0 +1,66 @@
+package ar.org.centro8.java.curso.proyecto_final_poo.controllers;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import ar.org.centro8.java.curso.proyecto_final_poo.model.entity.Producto;
+import ar.org.centro8.java.curso.proyecto_final_poo.services.ProductoService;
+
+@Controller
+@RequestMapping("/productos")
+public class ProductoController {
+    private final ProductoService service;
+    public ProductoController(ProductoService service){ this.service = service; }
+
+    @GetMapping
+    public String list(Model model){
+        model.addAttribute("productos", service.listar());
+        return "productos-list";
+    }
+
+    @GetMapping("/alta")
+    public String alta(Model model){
+        model.addAttribute("producto", new Producto());
+        return "producto-alta";
+    }
+
+    @PostMapping("/guardar")
+    public String guardar(Producto p){
+        if (p.getStock() < 0) p.setStock(0);
+        if (p.getPrecioCompra() < 0) p.setPrecioCompra(0.0);
+        if (p.getPrecioVenta() < 0) p.setPrecioVenta(0.0);
+        service.guardar(p);
+        return "redirect:/productos";
+    }
+
+    @GetMapping("/editar")
+    public String editar(@RequestParam int id, Model model){
+        model.addAttribute("producto", service.buscar(id));
+        return "producto-editar";
+    }
+
+    @PostMapping("/actualizar")
+    public String actualizar(Producto p){
+        service.actualizar(p);
+        return "redirect:/productos";
+    }
+
+    @GetMapping("/eliminar")
+    public String eliminar(@RequestParam int id, RedirectAttributes ra) {
+        try {
+            service.eliminar(id);
+            ra.addFlashAttribute("mensaje", "Producto eliminado correctamente.");
+        } catch (DataIntegrityViolationException e) {
+            ra.addFlashAttribute("error",
+                "No se puede eliminar el producto porque aun posee stock. " +
+                "Para eliminarlo, primero debe agotar stock."
+            );
+        }
+        return "redirect:/productos";
+    }
+
+
+}
